@@ -80,9 +80,11 @@ async function main() {
     if (user) {
       startRsvpButton.textContent = 'LOGOUT';
       guestbookContainer.style.display = 'block';
+      subscribeGuestbook();
     } else {
       startRsvpButton.textContent = 'RSVP';
       guestbookContainer.style.display = 'none';
+      unsubscribeGuestbook();
     }
   });
   // Called when the user clicks the RSVP button
@@ -127,5 +129,28 @@ async function main() {
    });
  });
 
+ function subscribeGuestbook() {
+  const q = query(collection(db, 'guestbook'), orderBy('timestamp', 'desc'));
+  guestbookListener = onSnapshot(q, snaps => {
+    // Reset page
+    guestbook.innerHTML = '';
+    // Loop through documents in database
+    snaps.forEach(doc => {
+      // Create an HTML entry for each document and add it to the chat
+      const entry = document.createElement('p');
+      entry.textContent = doc.data().name + ': ' + doc.data().text;
+      guestbook.appendChild(entry);
+    });
+  });
 }
+function unsubscribeGuestbook() {
+  if (guestbookListener != null) {
+    guestbookListener();
+    guestbookListener = null;
+  }
+}
+
+}
+
+
 main();
