@@ -4,9 +4,14 @@ import './style.css';
 import { initializeApp } from 'firebase/app';
 
 // Add the Firebase products and methods that you want to use
-import { getAuth, EmailAuthProvider, signOut,
-  onAuthStateChanged } from 'firebase/auth';
-import {} from 'firebase/firestore';
+import {
+  getAuth,
+  EmailAuthProvider,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+
+import { getFirestore, addDoc, collection } from 'firebase/firestore';
 
 import * as firebaseui from 'firebaseui';
 
@@ -40,6 +45,7 @@ async function main() {
 
   initializeApp(firebaseConfig);
   auth = getAuth();
+  db = getFirestore();
 
   // FirebaseUI config
   const uiConfig = {
@@ -56,32 +62,49 @@ async function main() {
       },
     },
   };
-console.log("pi")
+  console.log('pi');
   const ui = new firebaseui.auth.AuthUI(auth);
-  startRsvpButton.addEventListener("click",
-  () => {
-    console.log("hi")
-       ui.start("#firebaseui-auth-container", uiConfig);
- });
-
- // Listen to the current Auth state
- onAuthStateChanged(auth, user => {
-  if (user) {
-    startRsvpButton.textContent = 'LOGOUT';
-  } else {
-    startRsvpButton.textContent = 'RSVP';
-  }
-});
-// Called when the user clicks the RSVP button
-startRsvpButton.addEventListener('click', () => {
-  if (auth.currentUser) {
-    // User is signed in; allows user to sign out
-    signOut(auth);
-  } else {
-    // No user is signed in; allows user to sign in
+  startRsvpButton.addEventListener('click', () => {
+    console.log('hi');
     ui.start('#firebaseui-auth-container', uiConfig);
-  }
-  })
+  });
 
+  // Listen to the current Auth state
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      startRsvpButton.textContent = 'LOGOUT';
+      guestbookContainer.style.display = 'block';
+    } else {
+      startRsvpButton.textContent = 'RSVP';
+      guestbookContainer.style.display = 'none';
+    }
+  });
+  // Called when the user clicks the RSVP button
+  startRsvpButton.addEventListener('click', () => {
+    if (auth.currentUser) {
+      // User is signed in; allows user to sign out
+      signOut(auth);
+    } else {
+      // No user is signed in; allows user to sign in
+      ui.start('#firebaseui-auth-container', uiConfig);
+    }
+  });
+
+
+  form.addEventListener('submit', async e => {
+    // Prevent the default form redirect
+    e.preventDefault();
+    // Write a new message to the database collection "guestbook"
+    addDoc(collection(db, 'guestbook'), {
+      text: input.value,
+      timestamp: Date.now(),
+      name: auth.currentUser.displayName,
+      userId: auth.currentUser.uid
+    });
+    // clear message input field
+    input.value = '';
+    // Return false to avoid redirect
+    return false;
+  });
 }
 main();
